@@ -1,0 +1,108 @@
+{
+    "os": "Linux-6.5.0-21-generic-x86_64-with-glibc2.35",
+    "python": "3.10.13",
+    "heartbeatAt": "2024-03-18T05:34:25.236772",
+    "startedAt": "2024-03-18T05:34:24.032186",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home/ramlaoui/projects/grm-faenet/main.py",
+    "codePathLocal": "main.py",
+    "codePath": "main.py",
+    "git": {
+        "remote": "https://github.com/Ramlaoui/grm-faenet",
+        "commit": "8ccceda7f277f8d517697fde814fd3466ef97fd5"
+    },
+    "email": "ramlaoui@outlook.com",
+    "root": "/home/ramlaoui/projects/grm-faenet",
+    "host": "ramlaoui",
+    "username": "ramlaoui",
+    "executable": "/home/ramlaoui/projects/grm-faenet/venv/bin/python",
+    "cpu_count": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 4017.911583333334,
+        "min": 400.0,
+        "max": 4464.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 4440.834,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 3552.51,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4292.693,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4378.041,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4396.558,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4047.496,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4440.998,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 3544.33,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4435.889,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4309.019,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4436.077,
+            "min": 400.0,
+            "max": 4464.0
+        },
+        {
+            "current": 4193.528,
+            "min": 400.0,
+            "max": 4464.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 456.8854446411133,
+            "used": 186.72476196289062
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 3070",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3070",
+            "memory_total": 8589934592
+        }
+    ],
+    "memory": {
+        "total": 31.180999755859375
+    }
+}
