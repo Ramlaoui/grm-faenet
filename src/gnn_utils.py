@@ -17,12 +17,12 @@ def scatter(h, batch, dim=0, reduce="add"):
     Returns:
         Tensor: The aggregated node features.
     """
-    unique_batches = torch.unique(batch)  # Identifying the unique orchestral sections
+    unique_batches = torch.unique(batch)
     output_size = [h.size(i) if i != dim else len(unique_batches) for i in range(h.dim())]
-    output = h.new_zeros(output_size)  # Preparing the stage for the ensemble's performance
+    output = h.new_zeros(output_size)
     
-    for b in unique_batches:  # For each section in our orchestra
-        mask = batch == b  # Selecting the musicians of this section
+    for b in unique_batches:
+        mask = batch == b
         if reduce == "add":
             output[b] = h[mask].sum(dim=dim)
         elif reduce == "mean":
@@ -135,7 +135,6 @@ class GraphNorm(nn.Module):
         nn.init.zeros_(self.bias)
 
     def forward(self, x, batch=None):
-        """"""
         if batch is None:
             batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
 
@@ -149,16 +148,6 @@ class GraphNorm(nn.Module):
     def __repr__(self):
         return "{}(in_channels={})".format(self.__class__.__name__, self.in_channels)
 
-class MessagePassing(nn.Module):
-    """Base class for creating message passing networks"""
-
-    def __init__(self):
-        super(MessagePassing, self).__init__()
-    
-    def propagate(self, edge_index, x, **kwargs):
-        """The main function to perform message passing"""
-        raise NotImplementedError
-
 class GaussianSmearing(nn.Module):
     r"""Smears a distance distribution by a Gaussian function."""
 
@@ -171,3 +160,26 @@ class GaussianSmearing(nn.Module):
     def forward(self, dist):
         dist = dist.view(-1, 1) - self.offset.view(1, -1)
         return torch.exp(self.coeff * torch.pow(dist, 2))
+
+class MessagePassing(nn.Module):
+    """
+    Base class for message passing in GNNs.
+    """
+    def __init__(self):
+        super(MessagePassing, self).__init__()
+
+    def message(self, x_j, W, local_env=None):
+        raise NotImplementedError("The message function needs to be implemented by the subclass.")
+
+    def propagate(self, edge_index, x, W, local_env=None):
+        source, target = edge_index
+
+        if local_env is not None:
+            messages = self.message(x[target], W, local_env=local_env)
+        else:
+            messages = self.message(x[target], W)
+
+        aggr_messages = torch.zeros_like(x)
+        aggr_messages.index_add_(0, target, messages)
+
+        return aggr_messages

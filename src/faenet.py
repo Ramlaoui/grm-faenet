@@ -3,10 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
 from .gnn_utils import MessagePassing, GraphNorm, GaussianSmearing, dropout_edge, radius_graph, get_pbc_distances, scatter
-# from torch_geometric.nn import radius_graph # For testing, implement our own after
-from torch_geometric.nn import MessagePassing ## For testing, implement our own after
-# from torch_geometric.nn import GraphNorm ## For testing, implement our own after
-# from torch_scatter import scatter # For testing, implement our own after
 from .modules.phys_embedding import PhysEmbedding
 
 class EmbeddingBlock(nn.Module):

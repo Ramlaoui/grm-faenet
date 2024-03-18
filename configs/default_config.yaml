@@ -64,6 +64,7 @@ optimizer:
   
 logger: wandb
 project: grm-faenet
+is_debug: False
   
 # Hydra config, do not change.
 hydra:
