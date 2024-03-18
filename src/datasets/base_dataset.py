@@ -17,14 +17,16 @@ class LMDBDataset(Dataset):
 
         if not self.path.exists():
             try:
-                # execute script
+                print(f"Downloading {self.path}...")
                 subprocess.run(
-                    ["bash", str(Path("scripts/") / "download_data.sh") + f" is2re"],
+                    ["bash", str(Path("scripts/") / "download_data.sh"), "is2re"],
                     check=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
-            except subprocess.CalledProcessError:
+                print(f"Downloaded {self.path}.")
+            except Exception as e:
+                print(e)
                 raise FileNotFoundError(f"{self.path} does not exist.")
 
         self.env = lmdb.open(
