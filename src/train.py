@@ -10,9 +10,9 @@ from .faenet import FAENet
 from .datasets.data_utils import get_transforms, Normalizer
 
 class Trainer():
-    def __init__(self, config, device="cpu", is_debug=False):
+    def __init__(self, config, device="cpu", debug=False):
         self.config = config
-        self.is_debug = is_debug
+        self.debug = debug
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.run_name = f"{self.config['name']}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
         self.device
@@ -28,12 +28,13 @@ class Trainer():
         self.load_criterion()
     
     def load_logger(self):
-        if self.config['logger'] == 'wandb':
-            wandb.init(project=self.config['project'], name=self.run_name)
-            wandb.config.update(self.config)
-            self.writer = wandb
-        elif self.config['logger'] == 'tensorboard':
-            self.writer = tensorboardX.SummaryWriter(log_dir=f"runs/{self.run_name}")
+        if not self.debug:
+            if self.config['logger'] == 'wandb':
+                wandb.init(project=self.config['project'], name=self.run_name)
+                wandb.config.update(self.config)
+                self.writer = wandb
+            elif self.config['logger'] == 'tensorboard':
+                self.writer = tensorboardX.SummaryWriter(log_dir=f"runs/{self.run_name}")
     
     def load_model(self):
         self.model = FAENet(**self.config["model"]).to(self.device)
@@ -96,7 +97,8 @@ class Trainer():
                     "train/lr": self.optimizer.param_groups[0]['lr'],
                     "train/epoch": epoch,
                 }
-                self.writer.log(metrics)
+                if not self.debug:
+                    self.writer.log(metrics)
                 pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.item():.6f}')
                 if self.scheduler:
                     self.scheduler.step()
@@ -121,4 +123,5 @@ class Trainer():
                 total_loss += loss.item()
                 pbar.set_description(f'Val {i} - Epoch {epoch+1} - Loss: {loss.item():.6f}')
             total_loss /= len(val_loader)
-            self.writer.log({"val/loss": total_loss, "val/epoch": epoch})
+            if not self.debug:
+                self.writer.log({"val/loss": total_loss, "val/epoch": epoch})
