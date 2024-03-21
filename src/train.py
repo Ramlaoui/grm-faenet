@@ -14,7 +14,7 @@ class Trainer():
         self.config = config
         self.debug = debug
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.run_name = f"{self.config['name']}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        self.run_name = f"{self.config['run_name']}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
         self.device
         self.load()
 
@@ -60,7 +60,8 @@ class Trainer():
                 self.normalizer = Normalizer( mean=self.config['data']['train']['target_mean'], std=self.config['data']['train']['target_std'])
             else:
                 self.normalizer = None
-        self.parallel_collater = ParallelCollater(0 if self.device.type == 'cpu' else 1, self.config['model'].get("otf_graph", False))
+
+        self.parallel_collater = ParallelCollater() # To create graph batches
         transform = get_transforms(self.config)
         train_dataset = LMDBDataset(self.config['data']['train'], transform=transform)
         self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.config["optimizer"]['batch_size'], shuffle=True, num_workers=1, collate_fn=self.parallel_collater)
@@ -109,6 +110,7 @@ class Trainer():
     def validate(self, epoch):
         self.model.eval()
         for i, val_loader in enumerate(self.val_loaders):
+            split = list(self.config['data']['val'].keys())[i]
             pbar = tqdm(val_loader)
             total_loss = 0
             for batch_idx, (batch) in enumerate(pbar):
@@ -124,4 +126,4 @@ class Trainer():
                 pbar.set_description(f'Val {i} - Epoch {epoch+1} - Loss: {loss.item():.6f}')
             total_loss /= len(val_loader)
             if not self.debug:
-                self.writer.log({"val/loss": total_loss, "val/epoch": epoch})
+                self.writer.log({f"{split}/loss": total_loss, f"{split}/epoch": epoch})
