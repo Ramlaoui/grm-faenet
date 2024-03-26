@@ -6,12 +6,10 @@ import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch, Data
 import pickle
-from ..utils import pyg2_data_transform
 
-
-class LMDBDataset(Dataset):
+class BaseDataset(Dataset):
     def __init__(self, config, transform=None, fa_frames=None):
-        super(LMDBDataset, self).__init__()
+        super(BaseDataset, self).__init__()
         self.config = config
         self.path = Path(self.config["src"])
 
@@ -50,7 +48,11 @@ class LMDBDataset(Dataset):
     
     def __getitem__(self, idx):
         datapoint_pickle = self.env.begin().get(self._keys[idx])
-        data_object = pyg2_data_transform(pickle.loads(datapoint_pickle))
+        data_object = pickle.loads(datapoint_pickle)
+        source = data_object.__dict__
+        if "_store" in source:
+            source = source["_store"]
+        data_object =  Data(**{k: v for k, v in source.items() if v is not None})
 
         if self.transform:
             data_object = self.transform(data_object)
@@ -60,6 +62,7 @@ class LMDBDataset(Dataset):
     def close_db(self):
         self.env.close()
 
+# For creating the batch from a list of graphs
 class ParallelCollater:
     def __init__(self):
         pass
@@ -68,7 +71,7 @@ class ParallelCollater:
         batch = Batch.from_data_list(data_list)
 
         n_neighbors = []
-        for i, data in enumerate(data_list):
+        for _, data in enumerate(data_list):
             n_index = data.edge_index[1, :]
             n_neighbors.append(n_index.shape[0])
         batch.neighbors = torch.tensor(n_neighbors)
