@@ -112,15 +112,8 @@ def get_pbc_distances(
     return out
 
 class GraphNorm(nn.Module):
-    """Graph normalization layer as introduced by
-    `Battaglia et al. <https://arxiv.org/abs/1806.01261>`_
-    .. math::
-        \mathbf{X}^{\prime} = \left( \mathbf{D} + \mathbf{I} \right)^{-1/2} \mathbf{X}
-        \left( \mathbf{D} + \mathbf{I} \right)^{-1/2}
-    where :math:`\mathbf{D}` and :math:`\mathbf{I}` denote the degree matrix and the
-    identity matrix, respectively.
-    Args:
-        in_channels (int): Size of each input sample.
+    """
+    Graph normalization layer
     """
 
     def __init__(self, in_channels):
@@ -169,7 +162,7 @@ class MessagePassing(nn.Module):
         super(MessagePassing, self).__init__()
 
     def message(self, x_j, W, local_env=None):
-        raise NotImplementedError("The message function needs to be implemented by the subclass.")
+        raise NotImplementedError
 
     def propagate(self, edge_index, x, W, local_env=None):
         source, target = edge_index
