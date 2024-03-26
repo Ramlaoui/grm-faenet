@@ -6,12 +6,10 @@ import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch, Data
 import pickle
-from ..utils import pyg2_data_transform
 
-
-class LMDBDataset(Dataset):
+class BaseDataset(Dataset):
     def __init__(self, config, transform=None, fa_frames=None):
-        super(LMDBDataset, self).__init__()
+        super(BaseDataset, self).__init__()
         self.config = config
         self.path = Path(self.config["src"])
 
@@ -50,7 +48,11 @@ class LMDBDataset(Dataset):
     
     def __getitem__(self, idx):
         datapoint_pickle = self.env.begin().get(self._keys[idx])
-        data_object = pyg2_data_transform(pickle.loads(datapoint_pickle))
+        data_object = pickle.loads(datapoint_pickle)
+        source = data_object.__dict__
+        if "_store" in source:
+            source = source["_store"]
+        data_object =  Data(**{k: v for k, v in source.items() if v is not None})
 
         if self.transform:
             data_object = self.transform(data_object)
@@ -60,50 +62,18 @@ class LMDBDataset(Dataset):
     def close_db(self):
         self.env.close()
 
+# For creating the batch from a list of graphs
 class ParallelCollater:
-    def __init__(self, num_gpus, otf_graph=False):
-        self.num_gpus = num_gpus
-        self.otf_graph = otf_graph
+    def __init__(self):
+        pass
 
     def __call__(self, data_list):
-        if self.num_gpus in [0, 1]:  # adds cpu-only case
-            batch = data_list_collater(data_list, otf_graph=self.otf_graph)
-            return [batch]
+        batch = Batch.from_data_list(data_list)
 
-        else:
-            num_devices = min(self.num_gpus, len(data_list))
+        n_neighbors = []
+        for _, data in enumerate(data_list):
+            n_index = data.edge_index[1, :]
+            n_neighbors.append(n_index.shape[0])
+        batch.neighbors = torch.tensor(n_neighbors)
 
-            count = torch.tensor([data.num_nodes for data in data_list])
-            cumsum = count.cumsum(0)
-            cumsum = torch.cat([cumsum.new_zeros(1), cumsum], dim=0)
-            device_id = num_devices * cumsum.to(torch.float) / cumsum[-1].item()
-            device_id = (device_id[:-1] + device_id[1:]) / 2.0
-            device_id = device_id.to(torch.long)
-            split = device_id.bincount().cumsum(0)
-            split = torch.cat([split.new_zeros(1), split], dim=0)
-            split = torch.unique(split, sorted=True)
-            split = split.tolist()
-
-            return [
-                data_list_collater(data_list[split[i] : split[i + 1]])
-                for i in range(len(split) - 1)
-            ]
-
-def data_list_collater(data_list, otf_graph=False):
-    batch = Batch.from_data_list(data_list)
-
-    if (
-        not otf_graph
-        and hasattr(data_list[0], "edge_index")
-        and data_list[0].edge_index is not None
-    ):
-        try:
-            n_neighbors = []
-            for i, data in enumerate(data_list):
-                n_index = data.edge_index[1, :]
-                n_neighbors.append(n_index.shape[0])
-            batch.neighbors = torch.tensor(n_neighbors)
-        except NotImplementedError:
-            pass
-
-    return batch
+        return [batch]

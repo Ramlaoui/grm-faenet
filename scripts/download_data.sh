@@ -13,6 +13,9 @@ if [ "$1" = "is2re" ]; then
     if [ ! -f val_id.lmdb ]; then
         gdown https://drive.google.com/uc?id=1ALTdSZuoc1KRmuf5KEDWFz6yciqv2zJq -O val_id.lmdb
     fi
+    if [ ! -f val_ood_both.lmdb ]; then
+        gdown https://drive.google.com/uc?id=1r4yL1fRNhdFcOf7r7EwhbvOHBPhfM88F -O val_ood_both.lmdb
+    fi
 elif [ "$1" = "dense" ]; then
     echo "Downloading OC20 Dense"
     cd data

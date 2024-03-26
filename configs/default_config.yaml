@@ -1,3 +1,13 @@
+run_name: test
+
+logger: wandb
+project: grm-faenet
+debug: False
+
+equivariance: "data_augmentation" # "" or "data_augmentation" or "frame_averaging"
+fa_type: "full" # "stochastic" or "full"
+oc20: True # whether the oc20 dataset is used or not
+
 data:
     train:
         src: data/is2re/train/is2re_10k.lmdb
@@ -7,10 +17,8 @@ data:
     val:
         val_id:
             src: data/is2re/val/val_id.lmdb
-    frame_averaging: ""
-    fa_method: ""
-
-name: test
+        val_ood_both:
+            src: data/is2re/val/val_ood_both.lmdb
 
 model:
     name: faenet
@@ -22,37 +30,11 @@ model:
     num_gaussians: 104
     dropout_lin: 0.0
     dropout_edge: 0.0
-    dropout_lowest_layer: output # lowest layer where `dropout_lin` is applied. Can be `inter-{i}` or `output`. Defaults to `output`.
-    first_trainable_layer: "" # lowest layer to NOT freeze. All previous layers will be frozen. Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`.
-                            # if it is `` then no layer is frozen. If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
-                            # Defaults to ``.
     cutoff: 6.0
     use_pbc: True
-    regress_forces: False
     tag_hidden_channels: 64 # only for OC20
     pg_hidden_channels: 64 # period & group embedding hidden channels
     phys_embeds: True # physics-aware embeddings for atoms
-    phys_hidden_channels: 0
-    energy_head: weighted-av-final-embeds # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
-    skip_co: concat # Skip connections {False, "add", "concat"}
-    second_layer_MLP: False # in EmbeddingBlock
-    complex_mp: True # 2-layer MLP in Interaction blocks
-    mp_type: base # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
-    graph_norm: True # graph normalization layer
-    force_decoder_type: "mlp" # force head (`"simple"`, `"mlp"`, `"res"`, `"res_updown"`)
-    force_decoder_model_config:
-      simple:
-        hidden_channels: 128
-        norm: batch1d # batch1d, layer or null
-      mlp:
-        hidden_channels: 256
-        norm: batch1d # batch1d, layer or null
-      res:
-        hidden_channels: 128
-        norm: batch1d # batch1d, layer or null
-      res_updown:
-        hidden_channels: 128
-        norm: batch1d # batch1d, layer or null
 
 optimizer:
     batch_size: 16
@@ -61,10 +43,6 @@ optimizer:
     scheduler: CosineAnnealingLR
     optimizer: AdamW
     lr_initial: 0.002
-  
-logger: wandb
-project: grm-faenet
-is_debug: False
   
 # Hydra config, do not change.
 hydra:
