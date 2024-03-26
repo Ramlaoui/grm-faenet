@@ -160,7 +160,7 @@ class EmbeddingBlock(nn.Module):
 
         # Phys embeddings
         self.phys_emb = PhysEmbedding(
-            props=phys_embeds, props_grad=False, pg=True
+            props=phys_embeds, pg=True
         )
         # With MLP
         phys_hidden_channels = self.phys_emb.n_properties
