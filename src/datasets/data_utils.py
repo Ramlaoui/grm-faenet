@@ -2,25 +2,18 @@ import torch
 
 def get_rotation_matrix(pos, degrees, axis=0):
     rad_angle = torch.deg2rad(degrees)
-    if len(pos.shape) == 2:
-        # 2D
-        rot_matrix = torch.tensor([[torch.cos(rad_angle), -torch.sin(rad_angle)],
-                                    [torch.sin(rad_angle), torch.cos(rad_angle)]])
-    elif len(pos.shape) == 3:
-        # 3D
-        if axis == 0:
-            rot_matrix = torch.tensor([[1, 0, 0],
-                                        [0, torch.cos(rad_angle), -torch.sin(rad_angle)],
-                                        [0, torch.sin(rad_angle), torch.cos(rad_angle)]])
-        elif axis == 1:
-            rot_matrix = torch.tensor([[torch.cos(rad_angle), 0, torch.sin(rad_angle)],
-                                        [0, 1, 0],
-                                        [-torch.sin(rad_angle), 0, torch.cos(rad_angle)]])
-        elif axis == 2:
-            rot_matrix = torch.tensor([[torch.cos(rad_angle), -torch.sin(rad_angle), 0],
-                                        [torch.sin(rad_angle), torch.cos(rad_angle), 0],
-                                        [0, 0, 1]])
-    breakpoint()
+    if axis == 0:
+        rot_matrix = torch.tensor([[1, 0, 0],
+                                    [0, torch.cos(rad_angle), -torch.sin(rad_angle)],
+                                    [0, torch.sin(rad_angle), torch.cos(rad_angle)]])
+    elif axis == 1:
+        rot_matrix = torch.tensor([[torch.cos(rad_angle), 0, torch.sin(rad_angle)],
+                                    [0, 1, 0],
+                                    [-torch.sin(rad_angle), 0, torch.cos(rad_angle)]])
+    elif axis == 2:
+        rot_matrix = torch.tensor([[torch.cos(rad_angle), -torch.sin(rad_angle), 0],
+                                    [torch.sin(rad_angle), torch.cos(rad_angle), 0],
+                                    [0, 0, 1]])
     return rot_matrix
 
 class GraphRotate():
@@ -33,16 +26,10 @@ class GraphRotate():
     def __call__(self, data):
         rotate_cell = hasattr(data, 'cell')
 
-        if len(data.pos.shape) == 2:
+        rotation_matrix = torch.eye(3, device=data.pos.device, dtype=data.pos.dtype)
+        for ax in self.axis:
             degrees = torch.randint(self.min_degrees, self.max_degrees, (1,))
-            rotation_matrix = get_rotation_matrix(data.pos, degrees)
-        else:
-            for ax in self.axis:
-                degrees = torch.randint(self.min_degrees, self.max_degrees, (1,))
-                if ax == 0:
-                    rotation_matrix = get_rotation_matrix(data.pos, degrees, ax)
-                else:
-                    rotation_matrix = get_rotation_matrix(data.pos, degrees, ax) @ rotation_matrix
+            rotation_matrix = get_rotation_matrix(data.pos, degrees, ax) @ rotation_matrix
 
         data.pos = data.pos @ rotation_matrix.to(data.pos.device, data.pos.dtype)
         if rotate_cell:

@@ -84,10 +84,10 @@ def frame_averaging(pos, cell=None, fa_method="stochastic", oc20=True):
 def data_augmentation(g, oc20=True):
     if not oc20:
         # Random rotation around all axes
-        rotater = GraphRotate([-180, 180], [0, 1, 2])  # 3D
+        rotater = GraphRotate(-180, 180, [0, 1, 2])  # 3D
     else:
         # In OC20, we only rotate around the z-axis because the main axis is fixed.
-        rotater = GraphRotate([-180, 180], [2])
+        rotater = GraphRotate(-180, 180, [2])
 
     graph_rotated, _, _ = rotater(g)
 
