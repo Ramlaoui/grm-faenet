@@ -5,15 +5,13 @@ from mendeleev.fetch import fetch_ionization_energies, fetch_table
 
 
 class PhysEmbedding(nn.Module):
-    def __init__(self, props=True, props_grad=False, pg=False, short=False) -> None:
+    def __init__(self, props=True, pg=False, short=False) -> None:
         """
         Create physics-aware embeddings meta class with sub-emeddings for each atom
 
         Args:
             props (bool, optional): Create an embedding of physical
                 properties. (default: :obj:`True`)
-            props_grad (bool, optional): Learn a physics-aware embedding
-                instead of keeping it fixed. (default: :obj:`False`)
             pg (bool, optional): Learn two embeddings based on period and
                 group information respectively. (default: :obj:`False`)
             short (bool, optional): Remove all columns containing NaN values.
@@ -42,7 +40,6 @@ class PhysEmbedding(nn.Module):
         self.n_properties = 0
 
         self.props = props
-        self.props_grad = props_grad
         self.pg = pg
         self.short = short
 
@@ -87,7 +84,6 @@ class PhysEmbedding(nn.Module):
 
             # Normalize
             df = (df - df.mean()) / df.std()
-            # normalized_df=(df-df.min())/(df.max()-df.min())
 
             # Process 'NaN' values and remove further non-essential columns
             if self.short:
@@ -110,10 +106,7 @@ class PhysEmbedding(nn.Module):
                     torch.from_numpy(df.values).float(),
                 ]
             )
-            if props_grad:
-                self.register_parameter("properties", nn.Parameter(properties))
-            else:
-                self.register_buffer("properties", properties)
+            self.register_buffer("properties", properties)
 
     @property
     def device(self):
@@ -121,4 +114,3 @@ class PhysEmbedding(nn.Module):
             return self.properties.device
         if self.pg:
             return self.group.device
-        # raise ValueError("PhysEmb has no device because it has no tensor!")
