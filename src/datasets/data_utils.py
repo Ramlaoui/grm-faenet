@@ -1,4 +1,5 @@
 import torch
+from copy import deepcopy
 
 def get_rotation_matrix(pos, degrees, axis=0):
     rad_angle = torch.deg2rad(degrees)
@@ -52,14 +53,13 @@ class GraphReflect():
                 if (reflection_type in [0, 1] and ax == 0) or (reflection_type in [0, 2] and ax == 1):
                     reflect_matrix[ax, ax] = -1
                 elif reflection_type == 3 and ax == 0:
-                    reflect_matrix[:, 0], reflect_matrix[:, 1] = reflect_matrix[:, 1], reflect_matrix[:, 0]
+                    buffer = deepcopy(reflect_matrix[:, 0])
+                    reflect_matrix[:, 0], reflect_matrix[:, 1] = reflect_matrix[:, 1], buffer
     
             data.pos = data.pos @ reflect_matrix.to(data.pos.device, data.pos.dtype)
             if reflect_cell:
                 data.cell = data.cell @ reflect_matrix.to(data.cell.device, data.cell.dtype)
     
-            if reflection_type == 3:
-                breakpoint()
             return data, reflect_matrix, torch.inverse(reflect_matrix)
 
 class Normalizer(object):
