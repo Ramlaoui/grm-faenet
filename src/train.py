@@ -115,8 +115,11 @@ class Trainer():
         for epoch in range(epochs):
             self.model.train()
             pbar = tqdm(self.train_loader)
+            mae_loss, mse_loss = 0, 0
+            n_batches_epoch = 0
             for batch_idx, (batch) in enumerate(pbar):
                 n_batches += len(batch[0].natoms)
+                n_batches_epoch += len(batch[0].natoms)
                 batch = batch[0].to(self.device)
                 self.optimizer.zero_grad()
                 start_time = torch.cuda.Event(enable_timing=True)
@@ -136,23 +139,30 @@ class Trainer():
                     output_unnormed = output["energy"].reshape(-1)
                 loss = self.criterion(output["energy"].reshape(-1), target_normed.reshape(-1))
                 loss.backward()
-                mae_loss = mae(output_unnormed, target).detach()
-                mse_loss = mse(output_unnormed, target).detach()
+                mae_loss_batch = mae(output_unnormed, target).detach()
+                mse_loss_batch = mse(output_unnormed, target).detach()
+                mae_loss += mae_loss_batch
+                mse_loss += mse_loss_batch
                 grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                 self.optimizer.step()
                 metrics = {
                     "train/loss": loss.detach().item(),
-                    "train/mae": mae_loss.item(),
-                    "train/mse": mse_loss.item(),
+                    "train/mae": mae_loss_batch.item(),
+                    "train/mse": mse_loss_batch.item(),
                     "train/batch_run_time": current_run_time,
                     "train/lr": self.optimizer.param_groups[0]['lr'],
-                    "train/epoch": epoch,
+                    "train/epoch": (epoch*len(self.train_loader) + batch_idx) / (epochs*len(self.train_loader))
                 }
                 if not self.debug:
                     self.writer.log(metrics)
                 pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.detach().item():.6f}')
                 if self.scheduler:
                     self.scheduler.step()
+            if not self.debug:
+                self.writer.log({
+                    "train/mae_epoch": mae_loss.item()/len(self.train_loader),
+                    "train/mse_epoch": mse_loss.item()/len(self.train_loader),
+                })
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             if not self.debug:
@@ -173,7 +183,10 @@ class Trainer():
             split = list(self.config['dataset']['val'].keys())[i]
             pbar = tqdm(val_loader)
             total_loss = 0
+            mae_loss, mse_loss = 0, 0
+            n_batches = 0
             for batch_idx, (batch) in enumerate(pbar):
+                n_batches += len(batch[0].natoms)
                 batch = batch[0].to(self.device)
                 output = self.faenet_call(batch)
                 target = batch.y_relaxed
@@ -181,14 +194,16 @@ class Trainer():
                     output_unnormed = self.normalizer.denorm(output["energy"].reshape(-1))
                 else:
                     output_unnormed = output["energy"].reshape(-1)
-                mae_loss = mae(output_unnormed, target).detach()
-                mse_loss = mse(output_unnormed, target).detach()
-                pbar.set_description(f'Val {i} - Epoch {epoch+1} - MAE: {mae_loss.item():.6f}')
+                mae_loss_batch = mae(output_unnormed, target).detach()
+                mse_loss_batch = mse(output_unnormed, target).detach()
+                mae_loss += mae_loss_batch
+                mse_loss += mse_loss_batch
+                pbar.set_description(f'Val {i} - Epoch {epoch+1} - MAE: {mae_loss.item()/batch_idx:.6f}')
             total_loss /= len(val_loader)
             if not self.debug:
                 self.writer.log({
-                    f"{split}/mae": mae_loss.item(),
-                    f"{split}/mse": mse_loss.item()
+                    f"{split}/mae": mae_loss.item() / len(val_loader),
+                    f"{split}/mse": mse_loss.item() / len(val_loader),
                 })
 
     def measure_model_invariance(self, model):
