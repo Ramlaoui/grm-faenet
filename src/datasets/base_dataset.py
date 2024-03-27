@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 import lmdb
 import subprocess
 import numpy as np
@@ -15,14 +16,21 @@ class BaseDataset(Dataset):
 
         if not self.path.exists():
             try:
-                print(f"Downloading {self.path}...")
-                subprocess.run(
-                    ["bash", str(Path("scripts/") / "download_data.sh"), "is2re"],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-                print(f"Downloaded {self.path}.")
+                if sys.platform.startswith('win'):
+                    print(f"Downloading {self.path}...")
+                    subprocess.run(
+                        ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", str(Path("scripts/") / "download_data.sh"), "-task", "is2re"]
+                    )
+                    print(f"Downloaded {self.path}.")
+                else:
+                    print(f"Downloading {self.path}...")
+                    subprocess.run(
+                        ["bash", str(Path("scripts/") / "download_data.sh"), "is2re"],
+                        check=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                    print(f"Downloaded {self.path}.")
             except Exception as e:
                 print(e)
                 raise FileNotFoundError(f"{self.path} does not exist.")
