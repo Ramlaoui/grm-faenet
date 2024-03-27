@@ -198,7 +198,7 @@ class Trainer():
                 mse_loss_batch = mse(output_unnormed, target).detach()
                 mae_loss += mae_loss_batch
                 mse_loss += mse_loss_batch
-                pbar.set_description(f'Val {i} - Epoch {epoch+1} - MAE: {mae_loss.item()/batch_idx:.6f}')
+                pbar.set_description(f'Val {i} - Epoch {epoch+1} - MAE: {mae_loss.item()/(batch_idx+1):.6f}')
             total_loss /= len(val_loader)
             if not self.debug:
                 self.writer.log({
