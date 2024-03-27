@@ -1,40 +1,11 @@
-run_name: test
+run_name: "default"
 
 logger: wandb
 project: grm-faenet
 debug: False
 
 equivariance: "data_augmentation" # "" or "data_augmentation" or "frame_averaging"
-fa_type: "full" # "stochastic" or "full"
-oc20: True # whether the oc20 dataset is used or not
-
-data:
-    train:
-        src: data/is2re/train/is2re_10k.lmdb
-        normalize_labels: True
-        target_mean: -1.525913953781128
-        target_std: 2.279365062713623
-    val:
-        val_id:
-            src: data/is2re/val/val_id.lmdb
-        val_ood_both:
-            src: data/is2re/val/val_ood_both.lmdb
-
-model:
-    name: faenet
-    act: swish
-    loss: mae
-    hidden_channels: 384
-    num_filters: 480
-    num_interactions: 5
-    num_gaussians: 104
-    dropout_lin: 0.0
-    dropout_edge: 0.0
-    cutoff: 6.0
-    use_pbc: True
-    tag_hidden_channels: 64 # only for OC20
-    pg_hidden_channels: 64 # period & group embedding hidden channels
-    phys_embeds: True # physics-aware embeddings for atoms
+fa_type: "" # "" or "stochastic" or "full"
 
 optimizer:
     batch_size: 16
@@ -43,6 +14,11 @@ optimizer:
     scheduler: CosineAnnealingLR
     optimizer: AdamW
     lr_initial: 0.002
+
+defaults:
+    - _self_
+    - dataset : oc20
+    - model : faenet
   
 # Hydra config, do not change.
 hydra:
