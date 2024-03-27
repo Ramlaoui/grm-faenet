@@ -8,20 +8,11 @@ def swish(x):
     return x * torch.sigmoid(x)
 
 class FAENet(nn.Module):
-    def __init__(
-        self,
-        cutoff=6.0,
-        use_pbc=True,
-        max_num_neighbors=40,
-        num_gaussians=50,
-        num_filters=128,
-        hidden_channels=128,
-        tag_hidden_channels=32,
-        pg_hidden_channels=32,
-        phys_embeds=True,
-        num_interactions=4,
-        **kwargs,
-    ):
+    def __init__(self, cutoff=6.0, use_pbc=True, max_num_neighbors=40,
+                 num_gaussians=50, num_filters=128, hidden_channels=128,
+                 tag_hidden_channels=32, pg_hidden_channels=32, 
+                 phys_embeds=True, num_interactions=4, **kwargs,
+                 ):
         super().__init__()
 
         self.cutoff = cutoff
@@ -64,16 +55,12 @@ class FAENet(nn.Module):
         )
 
         # Output block
-        self.output_block = OutputBlock(
-            self.hidden_channels,
-            self.dropout_lin
-        )
+        self.output_block = OutputBlock(self.hidden_channels, self.dropout_lin)
 
         # Skip co
         self.mlp_skip_co = nn.Linear((self.num_interactions + 1), 1)
 
     def forward(self, data):
-        # Rewire the graph
         z = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
@@ -123,13 +110,8 @@ class FAENet(nn.Module):
 
         h, e = self.embed_block(z, rel_pos, edge_attr, data.tags)
 
-        energy_skip_co = []
-        for ib, interaction in enumerate(self.interaction_blocks):
-            energy_skip_co.append(
-                self.output_block(
-                    h, edge_index, edge_weight, batch, data
-                )
-            )
+        for _, interaction in enumerate(self.interaction_blocks):
+            energy_skip_co.append(self.output_block(h, edge_index, edge_weight, batch, data))
             h = interaction(h, edge_index, e)
 
         energy = self.output_block(h, edge_index, edge_weight, batch, data=data)
@@ -145,38 +127,22 @@ class FAENet(nn.Module):
         return preds
 
 class EmbeddingBlock(nn.Module):
-    def __init__(
-        self,
-        num_gaussians,
-        num_filters,
-        hidden_channels,
-        tag_hidden_channels,
-        pg_hidden_channels,
-        phys_embeds,
-    ):
+    def __init__(self, num_gaussians, num_filters, hidden_channels,
+                 tag_hidden_channels, pg_hidden_channels, phys_embeds,
+                 ):
         super().__init__()
-
-        # --- Node embedding ---
-
-        # Phys embeddings
-        self.phys_emb = PhysEmbedding(
-            props=phys_embeds, pg=True
-        )
-        # With MLP
+        # Physics 
+        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=True)
         phys_hidden_channels = self.phys_emb.n_properties
 
         # Period + group embeddings
-        self.period_embedding = nn.Embedding(
-            self.phys_emb.period_size, pg_hidden_channels
-        )
-        self.group_embedding = nn.Embedding(
-            self.phys_emb.group_size, pg_hidden_channels
-        )
+        self.period_embedding = nn.Embedding(self.phys_emb.period_size, pg_hidden_channels)
+        self.group_embedding = nn.Embedding(self.phys_emb.group_size, pg_hidden_channels)
 
-        # Tag embedding
+        # Tag embedding - adsorbate, surface catalyst, or deeper catalyst
         self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
-        # Main embedding
+        # Global embedding - only 85 elements are used in the dataset
         self.emb = nn.Embedding(
             85,
             hidden_channels
@@ -188,8 +154,8 @@ class EmbeddingBlock(nn.Module):
         # MLP
         self.lin = nn.Linear(hidden_channels, hidden_channels)
 
-        # --- Edge embedding ---
-        self.lin_e1 = nn.Linear(3, num_filters // 2)  # r_ij
+        # Edge embedding
+        self.lin_e1 = nn.Linear(3, num_filters // 2)  # r_ij on the schema
         self.lin_e12 = nn.Linear(num_gaussians, num_filters - (num_filters // 2))  # d_ij
 
         self.emb.reset_parameters()
@@ -201,15 +167,14 @@ class EmbeddingBlock(nn.Module):
         nn.init.xavier_uniform_(self.lin_e1.weight)
         self.lin_e1.bias.data.fill_(0)
 
-    def forward(self, z, rel_pos, edge_attr, tag=None, subnodes=None):
-        # --- Edge embedding --
+    def forward(self, z, rel_pos, edge_attr, tag=None):
+        # Edge embedding
         rel_pos = self.lin_e1(rel_pos)  # r_ij
         edge_attr = self.lin_e12(edge_attr)  # d_ij
         e = torch.cat((rel_pos, edge_attr), dim=1)
-        e = swish(e)  # can comment out
+        e = swish(e) 
 
-        # --- Node embedding --
-
+        # Node embedding
         # Create atom embeddings based on its characteristic number
         h = self.emb(z)
 
@@ -235,25 +200,15 @@ class EmbeddingBlock(nn.Module):
         return h, e
 
 class InteractionBlock(MessagePassing):
-    def __init__(
-        self,
-        hidden_channels,
-        num_filters,
-        dropout,
-    ):
+    def __init__(self, hidden_channels, num_filters, dropout, ):
         super(InteractionBlock, self).__init__()
         self.hidden_channels = hidden_channels
         self.dropout = float(dropout)
 
-        self.graph_norm = GraphNorm(
-            hidden_channels 
-        )
+        self.graph_norm = GraphNorm(hidden_channels)
 
-        self.lin_geom = nn.Linear(
-            num_filters + 2 * hidden_channels, hidden_channels
-        )
+        self.lin_geom = nn.Linear(num_filters + 2 * hidden_channels, hidden_channels)
         self.lin_h = nn.Linear(hidden_channels, hidden_channels)
-
         self.other_mlp = nn.Linear(hidden_channels, hidden_channels)
 
         nn.init.xavier_uniform_(self.lin_geom.weight)
@@ -264,65 +219,45 @@ class InteractionBlock(MessagePassing):
         self.lin_h.bias.data.fill_(0)
 
     def forward(self, h, edge_index, e):
-        # Define edge embedding
-
+        # Edge embedding
         if self.dropout > 0:
-            h = F.dropout(
-                h, p=self.dropout, training=self.training
-            )
-
+            h = F.dropout(h, p=self.dropout, training=self.training)
         e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
-
         e = swish(self.lin_geom(e))
 
-        # --- Message Passing block --
-        h = self.propagate(edge_index, x=h, W=e)  # propagate
+        # Message passing
+        h = self.propagate(edge_index, x=h, W=e)
         h = swish(self.graph_norm(h))
-        h = F.dropout(
-            h, p=self.dropout, training=self.training
-        )
+        h = F.dropout(h, p=self.dropout, training=self.training)
         h = swish(self.lin_h(h))
-
-        h = F.dropout(
-            h, p=self.dropout, training=self.training
-        )
+        h = F.dropout(h, p=self.dropout, training=self.training)
         h = swish(self.other_mlp(h))
 
         return h
 
-    def message(self, x_j, W, local_env=None):
-        if local_env is not None:
-            return W
-        else:
-            return x_j * W
+    def message(self, x_j, W):
+        return x_j * W
 
 class OutputBlock(nn.Module):
     def __init__(self, hidden_channels, dropout):
         super().__init__()
         self.dropout = float(dropout)
-
         self.lin1 = nn.Linear(hidden_channels, hidden_channels // 2)
         self.lin2 = nn.Linear(hidden_channels // 2, 1)
-
         self.w_lin = nn.Linear(hidden_channels, 1)
 
     def forward(self, h, edge_index, edge_weight, batch, data=None):
         alpha = self.w_lin(h)
 
         # MLP
-        h = F.dropout(
-            h, p=self.dropout, training=self.training
-        )
+        h = F.dropout(h, p=self.dropout, training=self.training)
         h = self.lin1(h)
         h = swish(h)
-        h = F.dropout(
-            h, p=self.dropout, training=self.training
-        )
+        h = F.dropout(h, p=self.dropout, training=self.training)
         h = self.lin2(h)
-
         h = h * alpha
 
-        # Global pooling
+        # Pooling
         out = scatter(h, batch, dim=0, reduce="add")
 
         return out
