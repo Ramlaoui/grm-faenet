@@ -1,5 +1,5 @@
 # grm-faenet
-A light-weight reimplementation of (FAENet)[https://arxiv.org/pdf/2305.05577.pdf] in PyTorch with experiments on small sized datasets. This is a student project for the (Graphical Models: Discrete Inference and Learning course)[https://thoth.inrialpes.fr/people/alahari/disinflearn/] by Ali Ramlaoui and Théo Saulus.
+A light-weight reimplementation of [FAENet](https://arxiv.org/pdf/2305.05577.pdf) in PyTorch with experiments on small sized datasets. This is a student project for the [Graphical Models: Discrete Inference and Learning course](https://thoth.inrialpes.fr/people/alahari/disinflearn/) by Ali Ramlaoui and Théo Saulus.
 
 
 ## Installation
