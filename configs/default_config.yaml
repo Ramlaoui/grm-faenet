@@ -10,7 +10,7 @@ fa_type: "" # "" or "stochastic" or "full"
 optimizer:
     batch_size: 16
     eval_batch_size: 8
-    epochs: 5
+    epochs: 15
     scheduler: CosineAnnealingLR
     optimizer: AdamW
     lr_initial: 0.002
