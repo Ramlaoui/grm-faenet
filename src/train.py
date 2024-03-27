@@ -153,7 +153,6 @@ class Trainer():
                 pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.detach().item():.6f}')
                 if self.scheduler:
                     self.scheduler.step()
-                break
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             if not self.debug:
