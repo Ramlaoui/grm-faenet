@@ -14,7 +14,7 @@ from torchvision.transforms import Compose
 def transformations_list(config):
     transform_list = []
     if config.get('equivariance', "") != "":
-        transform_list.append(FrameAveraging(config['equivariance'], config['fa_type'], config.get('oc20', True)))
+        transform_list.append(FrameAveraging(config['equivariance'], config['fa_type'], config['dataset'].get('oc20', True)))
     if len(transform_list) > 0:
         return Compose(transform_list)
     else:
@@ -67,22 +67,22 @@ class Trainer():
             self.criterion = torch.nn.L1Loss(reduction=reduction)
     
     def load_train_loader(self):
-        if self.config['data']['train'].get("normalize_labels", False):
-            if self.config['data']['train']['normalize_labels']:
-                self.normalizer = Normalizer( mean=self.config['data']['train']['target_mean'], std=self.config['data']['train']['target_std'])
+        if self.config['dataset']['train'].get("normalize_labels", False):
+            if self.config['dataset']['train']['normalize_labels']:
+                self.normalizer = Normalizer( mean=self.config['dataset']['train']['target_mean'], std=self.config['dataset']['train']['target_std'])
             else:
                 self.normalizer = None
 
         self.parallel_collater = ParallelCollater() # To create graph batches
         transform = transformations_list(self.config)
-        train_dataset = BaseDataset(self.config['data']['train'], transform=transform)
+        train_dataset = BaseDataset(self.config['dataset']['train'], transform=transform)
         self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.config["optimizer"]['batch_size'], shuffle=True, num_workers=0, collate_fn=self.parallel_collater)
     
     def load_val_loaders(self):
         self.val_loaders = []
-        for split in self.config['data']['val']:
+        for split in self.config['dataset']['val']:
             transform = transformations_list(self.config)
-            val_dataset = BaseDataset(self.config['data']['val'][split], transform=transform)
+            val_dataset = BaseDataset(self.config['dataset']['val'][split], transform=transform)
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.config["optimizer"]['eval_batch_size'], shuffle=False, num_workers=0, collate_fn=self.parallel_collater)
             self.val_loaders.append(val_loader)
     
@@ -146,7 +146,7 @@ class Trainer():
         for i, val_loader in enumerate(self.val_loaders):
             if splits and i not in splits:
                 continue
-            split = list(self.config['data']['val'].keys())[i]
+            split = list(self.config['dataset']['val'].keys())[i]
             pbar = tqdm(val_loader)
             total_loss = 0
             for batch_idx, (batch) in enumerate(pbar):

@@ -78,7 +78,7 @@ def frame_averaging(pos, cell=None, fa_method="stochastic", oc20=True):
     if fa_method == "full":
         return fa_poss, fa_cells
     else: # stochastic
-        index = torch.random.randint(0, len(fa_poss) - 1)
+        index = torch.randint(0, len(fa_poss) - 1, (1,))
         return [fa_poss[index]], [fa_cells[index]]
 
 def data_augmentation(g, oc20=True):
