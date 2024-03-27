@@ -136,12 +136,12 @@ class Trainer():
                     output_unnormed = output["energy"].reshape(-1)
                 loss = self.criterion(output["energy"].reshape(-1), target_normed.reshape(-1))
                 loss.backward()
-                mae_loss = mae(output_unnormed, target)
-                mse_loss = mse(output_unnormed, target)
+                mae_loss = mae(output_unnormed, target).detach()
+                mse_loss = mse(output_unnormed, target).detach()
                 grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                 self.optimizer.step()
                 metrics = {
-                    "train/loss": loss.item(),
+                    "train/loss": loss.detach().item(),
                     "train/mae": mae_loss.item(),
                     "train/mse": mse_loss.item(),
                     "train/batch_run_time": current_run_time,
@@ -150,7 +150,7 @@ class Trainer():
                 }
                 if not self.debug:
                     self.writer.log(metrics)
-                pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.item():.6f}')
+                pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.detach().item():.6f}')
                 if self.scheduler:
                     self.scheduler.step()
                 break
@@ -182,9 +182,8 @@ class Trainer():
                     output_unnormed = self.normalizer.denorm(output["energy"].reshape(-1))
                 else:
                     output_unnormed = output["energy"].reshape(-1)
-                # loss = self.criterion(output["energy"].reshape(-1), target_normed.reshape(-1))
-                mae_loss = mae(output_unnormed, target)
-                mse_loss = mse(output_unnormed, target)
+                mae_loss = mae(output_unnormed, target).detach()
+                mse_loss = mse(output_unnormed, target).detach()
                 pbar.set_description(f'Val {i} - Epoch {epoch+1} - MAE: {mae_loss.item():.6f}')
             total_loss /= len(val_loader)
             if not self.debug:
@@ -215,26 +214,26 @@ class Trainer():
 
             n_batches += len(batch[0].natoms)
 
-            preds_original = self.faenet_call(batch.to(self.device))
+            preds_original = self.faenet_call(batch.to(self.device)).detach()
             batch = batch.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
-            preds_rotated = self.faenet_call(rotated_graph.to(self.device))
+            preds_rotated = self.faenet_call(rotated_graph.to(self.device)).detach()
             rotated_graph = rotated_graph.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
-            preds_rotated_3d = self.faenet_call(rotated_graph_3d.to(self.device))
+            preds_rotated_3d = self.faenet_call(rotated_graph_3d.to(self.device)).detach()
             rotated_graph_3d = rotated_graph_3d.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
-            preds_reflected = self.faenet_call(reflected_graph.to(self.device))
+            preds_reflected = self.faenet_call(reflected_graph.to(self.device)).detach()
             reflected_graph = reflected_graph.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
 
-            energy_delta_rotated_2d += torch.abs(preds_original["energy"] - preds_rotated["energy"]).sum().item()
-            energy_delta_reflected += torch.abs(preds_original["energy"] - preds_reflected["energy"]).sum().item()
-            energy_delta_rotated_3d += torch.abs(preds_original["energy"] - preds_rotated_3d["energy"]).sum().item()
+            energy_delta_rotated_2d += torch.abs(preds_original["energy"] - preds_rotated["energy"]).sum().detach().item()
+            energy_delta_reflected += torch.abs(preds_original["energy"] - preds_reflected["energy"]).sum().detach().item()
+            energy_delta_rotated_3d += torch.abs(preds_original["energy"] - preds_rotated_3d["energy"]).sum().detach().item()
             pbar.set_description(f'Measuring invariance - Split {split} - Batch {j} - Energy Delta Rotated 2D: {energy_delta_rotated_2d/n_batches:.6f} - Energy Delta Reflected: {energy_delta_reflected/n_batches:.6f} - Energy Delta Rotated 3D: {energy_delta_rotated_3d/n_batches:.6f}')
 
         metrics[f"{split}/energy_delta_rotated_2d"] = energy_delta_rotated_2d / n_batches,
