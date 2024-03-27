@@ -2,7 +2,6 @@ numpy
 torch
 pandas
 torch_geometric
-torchvision # Could we remove the dependency ?
 
 lmdb
 

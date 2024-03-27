@@ -9,7 +9,7 @@ from .datasets.base_dataset import BaseDataset, ParallelCollater
 from .modules.frame_averaging import FrameAveraging
 from .faenet import FAENet
 from .datasets.data_utils import Normalizer, GraphRotate, GraphReflect
-from torchvision.transforms import Compose
+from .utils import Compose
 
 def transformations_list(config):
     transform_list = []

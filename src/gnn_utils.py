@@ -46,17 +46,7 @@ def dropout_edge(edge_index, p=0.5, training=False):
     return edge_index
 
 def radius_graph(x, r, batch=None, max_num_neighbors=None):
-    """Constructs a graph based on vertex proximity.
-    Args:
-        x (Tensor): The node feature matrix.
-        r (float): The radius of the sphere.
-        batch (LongTensor, optional): Batch vector
-            which assigns each node to a specific example.
-            (default: :obj:`None`)
-        max_num_neighbors (int, optional): The maximum number of neighbors to
-            return for each element in the batch. (default: :obj:`None`)
-    :rtype: (:class:`Tensor`, :class:`LongTensor
-    """
+    """Constructs a graph based on vertex proximity."""
     distance_matrix = torch.cdist(x, x, p=2)
     adj_matrix = distance_matrix <= r
 
@@ -71,21 +61,9 @@ def radius_graph(x, r, batch=None, max_num_neighbors=None):
     
     return edge_index
 
-def get_pbc_distances(
-        x, edge_index, cell, cell_offsets, neighbors
-):
+def get_pbc_distances(x, edge_index, cell, cell_offsets, neighbors):
     """Compute the pairwise distances of a set of points, taking into account
-    the periodic boundary conditions.
-    Args:
-        x (Tensor): The node feature matrix.
-        edge_index (LongTensor): The edge indices.
-        cell (Tensor): The cell vectors.
-        cell_offsets (Tensor): The cell offsets.
-        neighbors (int): The number of neighbors to consider.
-    Returns:
-    dict: dictionary with the updated edge_index, atom distances,
-        and optionally the offsets and distance vectors.
-    """
+    the periodic boundary conditions."""
     row, col = edge_index
 
     distance_vectors = x[row] - x[col]
@@ -112,9 +90,7 @@ def get_pbc_distances(
     return out
 
 class GraphNorm(nn.Module):
-    """
-    Graph normalization layer
-    """
+    """Graph normalization layer"""
 
     def __init__(self, in_channels):
         super(GraphNorm, self).__init__()
@@ -142,7 +118,7 @@ class GraphNorm(nn.Module):
         return "{}(in_channels={})".format(self.__class__.__name__, self.in_channels)
 
 class GaussianSmearing(nn.Module):
-    r"""Smears a distance distribution by a Gaussian function."""
+    """Smears a distance distribution by a Gaussian function."""
 
     def __init__(self, start=0.0, stop=5.0, num_gaussians=50):
         super().__init__()
@@ -155,22 +131,16 @@ class GaussianSmearing(nn.Module):
         return torch.exp(self.coeff * torch.pow(dist, 2))
 
 class MessagePassing(nn.Module):
-    """
-    Base class for message passing in GNNs.
-    """
+    """Base class for message passing in GNNs."""
     def __init__(self):
         super(MessagePassing, self).__init__()
 
-    def message(self, x_j, W, local_env=None):
+    def message(self, x_j, W): # Implemented in derived class
         raise NotImplementedError
 
-    def propagate(self, edge_index, x, W, local_env=None):
+    def propagate(self, edge_index, x, W):
         source, target = edge_index
-
-        if local_env is not None:
-            messages = self.message(x[target], W, local_env=local_env)
-        else:
-            messages = self.message(x[target], W)
+        messages = self.message(x[target], W)
 
         aggr_messages = torch.zeros_like(x)
         aggr_messages.index_add_(0, target, messages)

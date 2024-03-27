@@ -48,6 +48,7 @@ class PhysEmbedding(nn.Module):
         group = None
         period = None
 
+        # Dataset was extracted to avoid using mendeleev library
         self.table_path = Path("./data/chemical_elements/elements_table_ionization.csv")
         df = pd.read_csv(self.table_path)
 
@@ -78,7 +79,7 @@ class PhysEmbedding(nn.Module):
         if props:
             # Select only potentially relevant elements
             df = df[self.properties_list]
-            df = df.loc[:85, :]
+            df = df.loc[:85, :] # Only the first 85 elements are used in the dataset
 
             # Normalize
             df = (df - df.mean()) / df.std()
