@@ -125,13 +125,13 @@ class Trainer():
                 grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                 self.optimizer.step()
                 metrics = {
-                    "train/loss": loss.item(),
+                    "train/loss": loss.detach().item(),
                     "train/lr": self.optimizer.param_groups[0]['lr'],
                     "train/epoch": epoch,
                 }
                 if not self.debug:
                     self.writer.log(metrics)
-                pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.item():.6f}')
+                pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.detach().item():.6f}')
                 if self.scheduler:
                     self.scheduler.step()
             if self.device.type == 'cuda':
@@ -158,8 +158,8 @@ class Trainer():
                 else:
                     target_normed = target
                 loss = self.criterion(output["energy"].reshape(-1), target_normed.reshape(-1))
-                total_loss += loss.item()
-                pbar.set_description(f'Val {i} - Epoch {epoch+1} - Loss: {loss.item():.6f}')
+                total_loss += loss.detach().item()
+                pbar.set_description(f'Val {i} - Epoch {epoch+1} - Loss: {loss.detach().item():.6f}')
             total_loss /= len(val_loader)
             if not self.debug:
                 self.writer.log({f"{split}/loss": total_loss, f"{split}/epoch": epoch})
