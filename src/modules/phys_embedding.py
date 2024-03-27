@@ -1,7 +1,9 @@
+# Physical Embedding Module from the original OCP repository (used in almost every materials discovery model)
+# https://github.com/Open-Catalyst-Project/ocp
 import pandas as pd
+from pathlib import Path
 import torch
 import torch.nn as nn
-from mendeleev.fetch import fetch_ionization_energies, fetch_table
 
 
 class PhysEmbedding(nn.Module):
@@ -46,13 +48,8 @@ class PhysEmbedding(nn.Module):
         group = None
         period = None
 
-        # Load table with all properties of all periodic table elements
-        df = fetch_table("elements")
-        df = df.set_index("atomic_number")
-
-        # Add ionization energy
-        ies = fetch_ionization_energies(degree=[1, 2])
-        df = pd.concat([df, ies], axis=1)
+        self.table_path = Path("./data/chemical_elements/elements_table_ionization.csv")
+        df = pd.read_csv(self.table_path)
 
         # Fetch group and period data
         if pg:
@@ -73,7 +70,8 @@ class PhysEmbedding(nn.Module):
                 ]
             )
 
-        self.register_buffer("group", group)
+        self.register_buffer("group", group) # register buffer is used to store the tensor in the model
+        # so that it can be loaded on the GPU without being a parameter
         self.register_buffer("period", period)
 
         # Create an embedding of physical properties
