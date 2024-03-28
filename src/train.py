@@ -1,6 +1,5 @@
 import torch
 import wandb
-import tensorboardX
 from tqdm import tqdm
 from copy import deepcopy
 import datetime
@@ -45,8 +44,6 @@ class Trainer():
                 wandb.init(project=self.config['project'], name=self.run_name)
                 wandb.config.update(self.config)
                 self.writer = wandb
-            elif self.config['logger'] == 'tensorboard':
-                self.writer = tensorboardX.SummaryWriter(log_dir=f"runs/{self.run_name}")
     
     def load_model(self):
         self.model = FAENet(**self.config["model"]).to(self.device)
