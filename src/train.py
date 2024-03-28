@@ -25,7 +25,7 @@ class Trainer():
     def __init__(self, config, device="cpu", debug=False):
         self.config = config
         self.debug = debug
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device
         self.run_name = f"{self.config['run_name']}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
         self.device
         self.load()
@@ -92,15 +92,21 @@ class Trainer():
         if equivariance != "frame_averaging":
             return self.model(batch)
         else:
-            original_batch = deepcopy(batch)
+            original_positions = deepcopy(batch.pos)
+            if hasattr(batch, "cell"):
+                original_cell = deepcopy(batch.fa_cell)
             # The frame's positions are computed by the data loader
             # If stochastic frame averaging is used, fa_pos will only have one element
-            # If the full frame is used, it will have 8 elements
+            # If the full frame is used, it will have 8 elements in 3D and 4 in 2D (OC20)
             for i in range(len(batch.fa_pos)):
-                batch = deepcopy(original_batch)
                 batch.pos = batch.fa_pos[i]
-                output = self.model(batch)
+                if hasattr(batch, "cell"):
+                    batch.cell = batch.fa_cell[i]
+                output = self.model(deepcopy(batch))
                 outputs.append(output["energy"])
+            batch.pos = original_positions
+            if hasattr(batch, "cell"):
+                batch.cell = original_cell
         energy_prediction = torch.stack(outputs, dim=0).mean(dim=0)
         output["energy"] = energy_prediction
         return output
@@ -152,7 +158,7 @@ class Trainer():
                     "train/mse": mse_loss_batch.item(),
                     "train/batch_run_time": current_run_time,
                     "train/lr": self.optimizer.param_groups[0]['lr'],
-                    "train/epoch": (epoch*len(self.train_loader) + batch_idx) / (epochs*len(self.train_loader))
+                    "train/epoch": (epoch*len(self.train_loader) + batch_idx) / (len(self.train_loader))
                 }
                 if not self.debug:
                     self.writer.log(metrics)
