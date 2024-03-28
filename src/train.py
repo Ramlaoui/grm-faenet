@@ -228,19 +228,19 @@ class Trainer():
 
             n_batches += len(batch[0].natoms)
 
-            preds_original = self.faenet_call(batch.to(self.device)).detach()
+            preds_original = self.faenet_call(batch.to(self.device))
             batch = batch.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
-            preds_rotated = self.faenet_call(rotated_graph.to(self.device)).detach()
+            preds_rotated = self.faenet_call(rotated_graph.to(self.device))
             rotated_graph = rotated_graph.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
-            preds_rotated_3d = self.faenet_call(rotated_graph_3d.to(self.device)).detach()
+            preds_rotated_3d = self.faenet_call(rotated_graph_3d.to(self.device))
             rotated_graph_3d = rotated_graph_3d.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
-            preds_reflected = self.faenet_call(reflected_graph.to(self.device)).detach()
+            preds_reflected = self.faenet_call(reflected_graph.to(self.device))
             reflected_graph = reflected_graph.detach()
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
