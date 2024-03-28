@@ -36,7 +36,7 @@ def frame_averaging(pos, cell=None, fa_method="stochastic", oc20=True):
     if oc20:
         used_pos = pos[:, :2]
     else:
-        use_pos = pos
+        used_pos = pos
 
     relative_pos = used_pos - used_pos.mean(dim=0, keepdim=True)
     C = torch.matmul(relative_pos.t(), relative_pos) # Covariance matrix

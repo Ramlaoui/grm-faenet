@@ -24,6 +24,7 @@ class GraphRotate():
         self.axis = axis
 
     def __call__(self, data):
+        data = deepcopy(data)
         rotate_cell = hasattr(data, 'cell')
 
         rotation_matrix = torch.eye(3, device=data.pos.device, dtype=data.pos.dtype)
@@ -43,6 +44,7 @@ class GraphReflect():
         pass
 
     def __call__(self, data):
+        data = deepcopy(data)
         reflect_cell = hasattr(data, 'cell')
 
         reflect_matrix = torch.eye(3, device=data.pos.device, dtype=data.pos.dtype)
