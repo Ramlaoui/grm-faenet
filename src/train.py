@@ -81,7 +81,8 @@ class Trainer():
     def load_val_loaders(self):
         self.val_loaders = []
         for split in self.config['dataset']['val']:
-            val_dataset = BaseDataset(self.config['dataset']['val'][split], transform=self.transform)
+            transform = self.transform if self.config.get('equivariance', '') != "data_augmentation" else None
+            val_dataset = BaseDataset(self.config['dataset']['val'][split], transform=transform)
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.config["optimizer"]['eval_batch_size'], shuffle=False, num_workers=0, collate_fn=self.parallel_collater)
             self.val_loaders.append(val_loader)
     
