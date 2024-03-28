@@ -158,6 +158,7 @@ class Trainer():
                 pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.detach().item():.6f}')
                 if self.scheduler:
                     self.scheduler.step()
+                break
             if not self.debug:
                 self.writer.log({
                     "train/mae_epoch": mae_loss.item()/len(self.train_loader),
@@ -169,7 +170,7 @@ class Trainer():
                 self.writer.log({"systems_per_second": 1/(run_time / n_batches)})
             if epoch != epochs-1:
                 self.validate(epoch, splits=[0]) # Validate on the first split (val_id)
-        self.validate(epoch) # Validate on all splits
+        # self.validate(epoch) # Validate on all splits
         invariance_metrics = self.measure_model_invariance(self.model)
         
         
@@ -217,7 +218,7 @@ class Trainer():
         energy_delta_rotated_2d, energy_delta_reflected, energy_delta_rotated_3d = 0, 0, 0
         n_batches = 0
         # Testing no val_id only
-        new_val_loader = torch.utils.data.DataLoader(self.val_loaders[0].dataset, batch_size=max(self.config["optimizer"]['eval_batch_size']//4, 1), shuffle=False, num_workers=0, collate_fn=self.parallel_collater)
+        new_val_loader = torch.utils.data.DataLoader(self.val_loaders[0].dataset, batch_size=max(self.config["optimizer"]['eval_batch_size'], 1), shuffle=False, num_workers=0, collate_fn=self.parallel_collater)
         split = list(self.config['dataset']['val'].keys())[0]
         pbar = tqdm(new_val_loader)
         for j, batch in enumerate(pbar): 
@@ -229,25 +230,28 @@ class Trainer():
             n_batches += len(batch[0].natoms)
 
             preds_original = self.faenet_call(batch.to(self.device))
-            batch = batch.detach()
+            del batch
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             preds_rotated = self.faenet_call(rotated_graph.to(self.device))
-            rotated_graph = rotated_graph.detach()
+            energy_delta_rotated_2d += torch.abs(preds_original["energy"] - preds_rotated["energy"]).sum().detach().item()
+            del rotated_graph
+            del preds_rotated
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             preds_rotated_3d = self.faenet_call(rotated_graph_3d.to(self.device))
-            rotated_graph_3d = rotated_graph_3d.detach()
+            energy_delta_rotated_3d += torch.abs(preds_original["energy"] - preds_rotated_3d["energy"]).sum().detach().item()
+            del rotated_graph_3d
+            del preds_rotated_3d
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             preds_reflected = self.faenet_call(reflected_graph.to(self.device))
-            reflected_graph = reflected_graph.detach()
+            energy_delta_reflected += torch.abs(preds_original["energy"] - preds_reflected["energy"]).sum().detach().item()
+            del reflected_graph
+            del preds_reflected
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
 
-            energy_delta_rotated_2d += torch.abs(preds_original["energy"] - preds_rotated["energy"]).sum().detach().item()
-            energy_delta_reflected += torch.abs(preds_original["energy"] - preds_reflected["energy"]).sum().detach().item()
-            energy_delta_rotated_3d += torch.abs(preds_original["energy"] - preds_rotated_3d["energy"]).sum().detach().item()
             pbar.set_description(f'Measuring invariance - Split {split} - Batch {j} - Energy Delta Rotated 2D: {energy_delta_rotated_2d/n_batches:.6f} - Energy Delta Reflected: {energy_delta_reflected/n_batches:.6f} - Energy Delta Rotated 3D: {energy_delta_rotated_3d/n_batches:.6f}')
 
         metrics[f"{split}/energy_delta_rotated_2d"] = energy_delta_rotated_2d / n_batches,
