@@ -8,4 +8,3 @@ lmdb
 hydra
 omegaconf
 wandb
-tensorboardX
