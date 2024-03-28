@@ -158,7 +158,6 @@ class Trainer():
                 pbar.set_description(f'Epoch {epoch+1}/{epochs} - Loss: {loss.detach().item():.6f}')
                 if self.scheduler:
                     self.scheduler.step()
-                break
             if not self.debug:
                 self.writer.log({
                     "train/mae_epoch": mae_loss.item()/len(self.train_loader),
@@ -170,7 +169,7 @@ class Trainer():
                 self.writer.log({"systems_per_second": 1/(run_time / n_batches)})
             if epoch != epochs-1:
                 self.validate(epoch, splits=[0]) # Validate on the first split (val_id)
-        # self.validate(epoch) # Validate on all splits
+        self.validate(epoch) # Validate on all splits
         invariance_metrics = self.measure_model_invariance(self.model)
         
         
