@@ -237,19 +237,19 @@ class Trainer():
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             preds_rotated = self.faenet_call(rotated_graph.to(self.device))
-            energy_delta_rotated_2d += torch.abs(preds_original["energy"] - preds_rotated["energy"]).mean().detach().item()
+            energy_delta_rotated_2d += torch.abs(preds_original["energy"] - preds_rotated["energy"]).sum().detach().item()
             del rotated_graph
             del preds_rotated
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             preds_rotated_3d = self.faenet_call(rotated_graph_3d.to(self.device))
-            energy_delta_rotated_3d += torch.abs(preds_original["energy"] - preds_rotated_3d["energy"]).mean().detach().item()
+            energy_delta_rotated_3d += torch.abs(preds_original["energy"] - preds_rotated_3d["energy"]).sum().detach().item()
             del rotated_graph_3d
             del preds_rotated_3d
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
             preds_reflected = self.faenet_call(reflected_graph.to(self.device))
-            energy_delta_reflected += torch.abs(preds_original["energy"] - preds_reflected["energy"]).mean().detach().item()
+            energy_delta_reflected += torch.abs(preds_original["energy"] - preds_reflected["energy"]).sum().detach().item()
             del reflected_graph
             del preds_reflected
             if self.device.type == 'cuda':
